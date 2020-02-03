@@ -14,9 +14,9 @@ public class CachedThunk<V> implements Thunk<V> {
     }
 
     @Override
-    public synchronized V apply() {
+    public synchronized V get() {
         if (value == null) {
-            value = thunk.apply();
+            value = thunk.get();
             thunk = null; // Explicitly drop reference
         }
         return value;

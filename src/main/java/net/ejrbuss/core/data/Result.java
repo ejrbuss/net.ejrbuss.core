@@ -1,16 +1,34 @@
 package net.ejrbuss.core.data;
 
+import net.ejrbuss.core.function.Eff;
 import net.ejrbuss.core.function.Fn;
 import net.ejrbuss.core.function.Thunk;
+
+import java.util.NoSuchElementException;
 
 public abstract class Result<V, E extends Throwable> {
 
     public static <V, E extends Throwable> Result<V, E> ok(V value) {
-        return new OkResult<>(value);
+        return new Ok<>(value);
     }
 
     public static <V, E extends Throwable> Result<V, E> error(E error) {
-        return new ErrorResult<>(error);
+        return new Error<>(error);
+    }
+
+    public static <V> Result<V, NoSuchElementException> from(Maybe<V> maybe) {
+        try {
+            return ok(maybe.force());
+        } catch(NoSuchElementException error) {
+            return error(error);
+        }
+    }
+
+    public static <V, E extends Throwable> Result<V, E> from(Alt<V, E> alt) {
+        return alt.match(
+                Result::ok,
+                Result::error
+        );
     }
 
     public abstract boolean isOk();
@@ -21,13 +39,19 @@ public abstract class Result<V, E extends Throwable> {
 
     public abstract V get(Thunk<V> defaultValue);
 
+    public abstract void each(Eff<V> eff);
+
+    public abstract <V2> Result<V2, E> map(Fn<V, V2> transform);
+
     public abstract <C> C match(Fn<V,C> okMatch, Fn<E, C> errorMatch);
 
-    private static class OkResult<V, E extends Throwable> extends Result<V, E> {
+    public abstract void effect(Eff<V> okMatch, Eff<E> errorMatch);
+
+    private static class Ok<V, E extends Throwable> extends Result<V, E> {
 
         private final V value;
 
-        public OkResult(V value) {
+        public Ok(V value) {
             this.value = value;
         }
 
@@ -52,8 +76,37 @@ public abstract class Result<V, E extends Throwable> {
         }
 
         @Override
+        public void each(Eff<V> eff) {
+            eff.cause(value);
+        }
+
+        @Override
+        public <V2> Result<V2, E> map(Fn<V, V2> transform) {
+            return ok(transform.apply(value));
+        }
+
+        @Override
         public <C> C match(Fn<V, C> okMatch, Fn<E, C> errorMatch) {
             return okMatch.apply(value);
+        }
+
+        @Override
+        public void effect(Eff<V> okMatch, Eff<E> errorMatch) {
+            okMatch.cause(value);
+        }
+
+        @Override
+        public int hashCode() {
+            return value.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof Result.Ok) {
+                Ok<?, ?> otherOk = (Ok<?, ?>) other;
+                return value.equals(otherOk.value);
+            }
+            return false;
         }
 
         @Override
@@ -62,11 +115,11 @@ public abstract class Result<V, E extends Throwable> {
         }
     }
 
-    private static class ErrorResult<V, E extends Throwable> extends Result<V, E> {
+    private static class Error<V, E extends Throwable> extends Result<V, E> {
 
         private final E error;
 
-        public ErrorResult(E error) {
+        public Error(E error) {
             this.error = error;
         }
 
@@ -87,12 +140,40 @@ public abstract class Result<V, E extends Throwable> {
 
         @Override
         public V get(Thunk<V> defaultValue) {
-            return defaultValue.apply();
+            return defaultValue.get();
+        }
+
+        @Override
+        public void each(Eff<V> eff) {}
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <V2> Result<V2, E> map(Fn<V, V2> transform) {
+            return (Result<V2, E>) this;
         }
 
         @Override
         public <C> C match(Fn<V, C> okMatch, Fn<E, C> errorMatch) {
             return errorMatch.apply(error);
+        }
+
+        @Override
+        public void effect(Eff<V> okMatch, Eff<E> errorMatch) {
+            errorMatch.cause(error);
+        }
+
+        @Override
+        public int hashCode() {
+            return error.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof Result.Error) {
+                Error<?, ?> otherError = (Error<?, ?>) other;
+                return error.equals(otherError.error);
+            }
+            return false;
         }
 
         @Override

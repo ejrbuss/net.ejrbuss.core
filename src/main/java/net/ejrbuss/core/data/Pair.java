@@ -1,5 +1,7 @@
 package net.ejrbuss.core.data;
 
+import net.ejrbuss.core.function.*;
+
 public class Pair<L, R> {
 
     public static <L, R> Pair<L, R> of(L left, R right) {
@@ -24,6 +26,14 @@ public class Pair<L, R> {
 
     public Pair<R, L> swap() {
         return new Pair<>(right, left);
+    }
+
+    public <V> V match(Fn2<L, R, V> match) {
+        return match.apply(left, right);
+    }
+
+    public void effect(Eff2<L, R> effect) {
+        effect.cause(left, right);
     }
 
     @Override

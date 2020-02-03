@@ -1,34 +1,54 @@
 package net.ejrbuss.core.data;
 
+import static net.ejrbuss.core.test.Dummy.*;
+
 import org.junit.Assert;
 import org.junit.Test;
-
 
 public class TestPair {
 
     @Test
     public void testOf() {
-        Pair<String, Integer> pair = Pair.of("test", 42);
-        Assert.assertEquals("test", pair.left());
-        Assert.assertEquals(Integer.valueOf(42), pair.right());
+        Pair<A, B> pair = Pair.of(A, B);
+        Assert.assertEquals(A, pair.left());
+        Assert.assertEquals(B, pair.right());
     }
 
     @Test
     public void testSwap() {
-        Pair<Integer, String> pair = Pair.of("test", 42).swap();
-        Assert.assertEquals("test", pair.right());
-        Assert.assertEquals(Integer.valueOf(42), pair.left());
+        Pair<B, A> pair = Pair.of(A, B).swap();
+        Assert.assertEquals(B, pair.left());
+        Assert.assertEquals(A, pair.right());
     }
 
     @Test
-    public void testEquality() {
-        Assert.assertEquals(Pair.of(1, 2), Pair.of(1, 2));
-        Assert.assertNotEquals(Pair.of(2, 1), Pair.of(2, 2));
+    public void testMatch() {
+        Assert.assertEquals(C, Pair.of(A, B).match((a, b) -> {
+            Assert.assertEquals(A, a);
+            Assert.assertEquals(B, b);
+            return C;
+        }));
+    }
+
+    @Test
+    public void testEffect() {
+        Pair.of(A, B).effect((a, b) -> {
+            Assert.assertEquals(A, a);
+            Assert.assertEquals(B, b);
+        });
+    }
+
+    @Test
+    public void testEquals() {
+        Assert.assertEquals(Pair.of(A, B), Pair.of(A, B));
+        Assert.assertNotEquals(Pair.of(A, B), Pair.of(C, B));
+        Assert.assertNotEquals(Pair.of(A, B), Pair.of(A, C));
+        Assert.assertNotEquals(Pair.of(A, B), null);
     }
 
     @Test
     public void testToString() {
-        Assert.assertTrue(Pair.of(3, 4).toString().endsWith("(3, 4)"));
+        Assert.assertTrue(Pair.of(A, B).toString().endsWith("(" + A + ", " + B + ")"));
     }
 
 }

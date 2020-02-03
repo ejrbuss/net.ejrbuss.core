@@ -14,4 +14,8 @@ public interface Fn3<A1, A2, A3, R> extends Fn2<A1, A2, Fn<A3, R>> {
         return (arg2, arg3) -> apply(arg1, arg2, arg3);
     }
 
+    default Thunk<R> thunk(A1 arg1, A2 arg2, A3 arg3) {
+        return () -> apply(arg1, arg2, arg3);
+    }
+
 }

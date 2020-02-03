@@ -1,8 +1,9 @@
 package net.ejrbuss.core.data;
 
+import net.ejrbuss.core.function.Eff;
 import net.ejrbuss.core.function.Thunk;
 
-public class Ref<V> implements Box<V> {
+public class Ref<V> implements Thunk<V>, Eff<V> {
 
     public static <V> Ref<V> of(V value) {
         return new Ref(value);
@@ -40,8 +41,13 @@ public class Ref<V> implements Box<V> {
         if (value != expected) {
             return false;
         }
-        set(thunk.apply());
+        set(thunk.get());
         return true;
+    }
+
+    @Override
+    public void cause(V value) {
+        set(value);
     }
 
     @Override

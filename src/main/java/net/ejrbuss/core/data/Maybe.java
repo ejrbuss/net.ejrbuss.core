@@ -3,10 +3,11 @@ package net.ejrbuss.core.data;
 import net.ejrbuss.core.function.Eff;
 import net.ejrbuss.core.function.Fn;
 import net.ejrbuss.core.function.Thunk;
+import net.ejrbuss.core.function.ThunkEff;
 
 import java.util.NoSuchElementException;
 
-public abstract class Maybe<V> {
+public abstract class Maybe<V> implements Traversable<V> {
 
     public static <V> Maybe<V> some(V value) {
         return new Some<>(value);
@@ -17,6 +18,33 @@ public abstract class Maybe<V> {
         return None.none;
     }
 
+    public static <V> Maybe<V> given(boolean condition, V value) {
+        if (condition) {
+            return some(value);
+        } else {
+            return none();
+        }
+    }
+
+    public static <V> Maybe<V> given(boolean condition, Thunk<V> value) {
+        if (condition) {
+            return some(value.get());
+        } else {
+            return none();
+        }
+    }
+
+    public static <V> Maybe<V> from(Result<V, ?> result) {
+        return result.match(
+                Maybe::some,
+                error -> none()
+        );
+    }
+
+    public static <V> Maybe<V> from(Seq<V> seq) {
+        return seq.first();
+    }
+
     public static <V> Maybe<V> or(Maybe<V> maybe1, Maybe<V> maybe2) {
         if (maybe1.isNone()) {
             return maybe2;
@@ -24,6 +52,8 @@ public abstract class Maybe<V> {
             return maybe1;
         }
     }
+
+
 
     public abstract boolean isNone();
 
@@ -37,7 +67,7 @@ public abstract class Maybe<V> {
 
     public abstract <R> R match(Fn<? super V, R> someMatch, Thunk<R> noneMatch);
 
-    public abstract <R> R match(Fn<? super V, R> someMatch, R defaultValue);
+    public abstract void effect(Eff<? super V> someEffect, ThunkEff noneEffect);
 
     public abstract void each(Eff<? super V> eff);
 
@@ -47,12 +77,24 @@ public abstract class Maybe<V> {
 
     public abstract Maybe<V> filter(Fn<? super V, Boolean> predicate);
 
+
+
     private static class Some<V> extends Maybe<V> {
 
         private final V value;
 
         public Some(V value) {
             this.value = value;
+        }
+
+        @Override
+        public Maybe<V> first() {
+            return this;
+        }
+
+        @Override
+        public Traversable<V> rest() {
+            return none();
         }
 
         @Override
@@ -86,13 +128,13 @@ public abstract class Maybe<V> {
         }
 
         @Override
-        public <B> B match(Fn<? super V, B> someMatch, B defaultValue) {
-            return someMatch.apply(value);
+        public void effect(Eff<? super V> someEffect, ThunkEff noneEffect) {
+            someEffect.cause(value);
         }
 
         @Override
         public void each(Eff<? super V> eff) {
-            eff.apply(value);
+            eff.cause(value);
         }
 
         @Override
@@ -103,6 +145,15 @@ public abstract class Maybe<V> {
         @Override
         public <B> Maybe<B> flatMap(Fn<? super V, Maybe<B>> transform) {
             return transform.apply(value);
+        }
+
+        @Override
+        public Maybe<V> filter(Fn<? super V, Boolean> predicate) {
+            if (predicate.apply(value)) {
+                return this;
+            } else {
+                return none();
+            }
         }
 
         @Override
@@ -120,25 +171,28 @@ public abstract class Maybe<V> {
         }
 
         @Override
-        public Maybe<V> filter(Fn<? super V, Boolean> predicate) {
-            if (predicate.apply(value)) {
-                return this;
-            } else {
-                return none();
-            }
-        }
-
-        @Override
         public String toString() {
             return super.toString() + "(" + value + ")";
         }
 
     }
 
+
+
     private static class None<V> extends Maybe<V> {
 
         @SuppressWarnings("rawtypes")
         public static None none = new None<>();
+
+        @Override
+        public Maybe<V> first() {
+            return this;
+        }
+
+        @Override
+        public Traversable<V> rest() {
+            return this;
+        }
 
         @Override
         public boolean isNone() {
@@ -162,17 +216,17 @@ public abstract class Maybe<V> {
 
         @Override
         public V get(Thunk<V> defaultValue) {
-            return defaultValue.apply();
+            return defaultValue.get();
         }
 
         @Override
         public <B> B match(Fn<? super V, B> someMatch, Thunk<B> noneMatch) {
-            return noneMatch.apply();
+            return noneMatch.get();
         }
 
         @Override
-        public <B> B match(Fn<? super V, B> someMatch, B defaultValue) {
-            return defaultValue;
+        public void effect(Eff<? super V> someEffect, ThunkEff noneEffect) {
+            noneEffect.cause();
         }
 
         @Override
