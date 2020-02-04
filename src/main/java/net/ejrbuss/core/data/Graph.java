@@ -1,4 +1,4 @@
 package net.ejrbuss.core.data;
 
-public class Graph {
+public interface Graph<V> {
 }

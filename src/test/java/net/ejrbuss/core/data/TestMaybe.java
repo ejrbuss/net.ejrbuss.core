@@ -20,9 +20,9 @@ public class TestMaybe {
 
     @Test
     public void testFrom() {
-        Assert.assertEquals(Maybe.none(), Maybe.from(Seq.empty()));
-        Assert.assertEquals(Maybe.some(A), Maybe.from(Seq.of(A)));
-        Assert.assertEquals(Maybe.none(), Maybe.from(Result.error(null)));
+        Assert.assertEquals(Maybe.none(), Maybe.from(List.empty()));
+        Assert.assertEquals(Maybe.some(A), Maybe.from(List.of(A)));
+        Assert.assertEquals(Maybe.none(), Maybe.from(Result.fail(null)));
         Assert.assertEquals(Maybe.some(A), Maybe.from(Result.ok(A)));
     }
 

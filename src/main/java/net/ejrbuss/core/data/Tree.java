@@ -1,4 +1,5 @@
 package net.ejrbuss.core.data;
 
-public class BTree {
+public interface Tree<V> {
+
 }

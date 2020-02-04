@@ -1,4 +1,4 @@
 package net.ejrbuss.core.data;
 
-public class Set {
+public interface Set<V> extends Seq<V> {
 }

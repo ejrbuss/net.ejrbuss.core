@@ -6,8 +6,6 @@ import net.ejrbuss.core.test.Dummy;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.NoSuchElementException;
-
 public class TestResult {
 
     public Error E = new Error();
@@ -15,29 +13,29 @@ public class TestResult {
     @Test
     public void testFrom() {
         Assert.assertEquals(Result.ok(A), Result.from(Alt.left(A)));
-        Assert.assertEquals(Result.error(E), Result.from(Alt.right(E)));
+        Assert.assertEquals(Result.fail(E), Result.from(Alt.right(E)));
         Assert.assertEquals(Result.ok(A), Result.from(Maybe.some(A)));
-        Assert.assertTrue(Result.from(Maybe.none()).isError());
+        Assert.assertTrue(Result.from(Maybe.none()).isFail());
     }
 
     @Test
     public void testIsOk() {
         Assert.assertTrue(Result.ok(A).isOk());
-        Assert.assertFalse(Result.error(E).isOk());
+        Assert.assertFalse(Result.fail(E).isOk());
     }
 
     @Test
     public void testIsError() {
-        Assert.assertTrue(Result.error(E).isError());
-        Assert.assertFalse(Result.ok(A).isError());
+        Assert.assertTrue(Result.fail(E).isFail());
+        Assert.assertFalse(Result.ok(A).isFail());
     }
 
     @Test
     public void testGet() {
         Assert.assertEquals(A, Result.<Dummy, Error>ok(A).get(B));
         Assert.assertEquals(A, Result.ok(A).get(panicThunk()));
-        Assert.assertEquals(A, Result.error(E).get(A));
-        Assert.assertEquals(A, Result.error(E).get(() -> A));
+        Assert.assertEquals(A, Result.fail(E).get(A));
+        Assert.assertEquals(A, Result.fail(E).get(() -> A));
     }
 
     @Test
@@ -45,13 +43,13 @@ public class TestResult {
         Ref<A> ref = Ref.of(null);
         Result.ok(A).each(ref);
         Assert.assertEquals(A, ref.get());
-        Result.error(E).each(panicEff());
+        Result.fail(E).each(panicEff());
     }
 
     @Test
     public void testMap() {
         Assert.assertEquals(Result.ok(B), Result.ok(A).map(AtoB));
-        Assert.assertEquals(Result.error(E), Result.error(E).map(panicFn()));
+        Assert.assertEquals(Result.fail(E), Result.fail(E).map(panicFn()));
     }
 
     @Test
@@ -60,7 +58,7 @@ public class TestResult {
             ok -> B,
             panicFn()
         ));
-        Assert.assertEquals(B, Result.error(E).match(
+        Assert.assertEquals(B, Result.fail(E).match(
             panicFn(),
             error -> B
         ));
@@ -72,32 +70,32 @@ public class TestResult {
         Result.ok(A).effect(ref, panicEff());
         Assert.assertEquals(A, ref.get());
         Ref<Error> refE = Ref.of(null);
-        Result.error(E).effect(panicEff(), refE);
+        Result.fail(E).effect(panicEff(), refE);
         Assert.assertEquals(E, refE.get());
     }
 
     @Test
     public void testHashcode() {
         Assert.assertEquals(Result.ok(A).hashCode(), Result.ok(A).hashCode());
-        Assert.assertEquals(Result.error(E).hashCode(), Result.error(E).hashCode());
+        Assert.assertEquals(Result.fail(E).hashCode(), Result.fail(E).hashCode());
         Assert.assertNotEquals(Result.ok(A).hashCode(), Result.ok(B).hashCode());
-        Assert.assertNotEquals(Result.error(E).hashCode(), Result.error(new RuntimeException()).hashCode());
+        Assert.assertNotEquals(Result.fail(E).hashCode(), Result.fail(new RuntimeException()).hashCode());
     }
 
     @Test
     public void testEquals() {
         Assert.assertEquals(Result.ok(A), Result.ok(A));
-        Assert.assertEquals(Result.error(E), Result.error(E));
+        Assert.assertEquals(Result.fail(E), Result.fail(E));
         Assert.assertNotEquals(Result.ok(A), Result.ok(B));
-        Assert.assertNotEquals(Result.error(E), Result.error(new RuntimeException()));
-        Assert.assertNotEquals(Result.ok(E), Result.error(E));
-        Assert.assertNotEquals(Result.error(E), Result.ok(E));
+        Assert.assertNotEquals(Result.fail(E), Result.fail(new RuntimeException()));
+        Assert.assertNotEquals(Result.ok(E), Result.fail(E));
+        Assert.assertNotEquals(Result.fail(E), Result.ok(E));
     }
 
     @Test
     public void testToString() {
         Assert.assertTrue(Result.ok(A).toString().endsWith("(" + A + ")"));
-        Assert.assertTrue(Result.error(E).toString().endsWith("(" + E + ")"));
+        Assert.assertTrue(Result.fail(E).toString().endsWith("(" + E + ")"));
     }
 
 }
